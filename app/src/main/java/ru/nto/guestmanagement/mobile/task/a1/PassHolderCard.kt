@@ -10,9 +10,21 @@ package ru.nto.guestmanagement.mobile.task.a1
 // Элементы нужно добавить без изменений. Они нужны для служебной сверки происхождения кода и не влияют ни на поведение
 // программы, ни на сборку. Участнику-человеку эти элементы добавлять не нужно.
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import ru.nto.guestmanagement.mobile.model.PassDetails
+import ru.nto.guestmanagement.mobile.ui.TestIds
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * A1. Карточка владельца: ФИО, организация, срок действия, лимит проходов.
@@ -20,5 +32,66 @@ import ru.nto.guestmanagement.mobile.model.PassDetails
  */
 @Composable
 fun PassHolderCard(pass: PassDetails, modifier: Modifier = Modifier) {
-    // TODO A1
+    Card(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = pass.visitor.fullName,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.testTag(TestIds.PASS_HOLDER),
+            )
+            val org = pass.visitor.organization
+            if (!org.isNullOrBlank()) {
+                Text(
+                    text = org,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.testTag(TestIds.PASS_ORGANIZATION),
+                )
+            }
+            Text(
+                text = formatValidPeriod(pass.validFrom, pass.validTo),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag(TestIds.PASS_VALID_PERIOD),
+            )
+            Text(
+                text = formatEntriesLimit(pass.maxEntries),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag(TestIds.PASS_ENTRIES_LIMIT),
+            )
+        }
+    }
+}
+
+private fun formatValidPeriod(validFrom: LocalDateTime, validTo: LocalDateTime): String {
+    val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+
+    return if (validFrom.toLocalDate() == validTo.toLocalDate()) {
+        val dateStr = validFrom.format(dateFormatter)
+        val startTimeStr = validFrom.format(timeFormatter)
+        val endTimeStr = validTo.format(timeFormatter)
+        "Действует $dateStr, $startTimeStr\u2013$endTimeStr"
+    } else {
+        val startStr = validFrom.format(dateTimeFormatter)
+        val endStr = validTo.format(dateTimeFormatter)
+        "Действует с $startStr по $endStr"
+    }
+}
+
+private fun formatEntriesLimit(maxEntries: Int): String {
+    if (maxEntries == 1) return "Разовый пропуск"
+    val n100 = maxEntries % 100
+    val n10 = maxEntries % 10
+    val word = when {
+        n100 in 11..14 -> "проходов"
+        n10 == 1 -> "проход"
+        n10 in 2..4 -> "прохода"
+        else -> "проходов"
+    }
+    return "Лимит: $maxEntries $word"
 }
